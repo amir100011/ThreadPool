@@ -1,6 +1,7 @@
 package bgu.spl.a2.sim.privateStates;
 
 import java.util.List;
+import java.util.Vector;
 
 import bgu.spl.a2.PrivateState;
 
@@ -20,8 +21,10 @@ public class CoursePrivateState extends PrivateState{
 	 * this may cause automatic tests to fail..
 	 */
 	public CoursePrivateState() {
-		//TODO: replace method body with real implementation
-		throw new UnsupportedOperationException("Not Implemented Yet.");
+		availableSpots = new Integer(0);
+		registered = new Integer(0);
+		regStudents = new Vector<String>();
+		prequisites = new Vector<String>();
 	}
 
 	public Integer getAvailableSpots() {
@@ -38,5 +41,33 @@ public class CoursePrivateState extends PrivateState{
 
 	public List<String> getPrequisites() {
 		return prequisites;
+	}
+
+	public void setAvailableSpots(Integer AvailableSpots){
+		this.availableSpots = new Integer(AvailableSpots.intValue());
+	}
+
+	public void setPrequisites(Vector<String> Prequisites ){this.prequisites = Prequisites;}
+
+	private void incRegistered(){
+		this.registered = new Integer(this.registered.intValue() + 1);
+	}
+	private void decRegistered(){
+		this.registered = new Integer(this.registered.intValue() - 1);
+	}
+
+	public void addStudents(String studentName){
+		int studentIndex = this.regStudents.indexOf(studentName);
+		if (studentIndex == -1) {
+			this.regStudents.add(studentName);
+			incRegistered();
+		}
+	}
+	public void removeStudents(String studentName){
+		int studentIndex = this.regStudents.indexOf(studentName);
+		if (studentIndex!=-1) {
+			this.regStudents.remove(studentIndex);
+			decRegistered();
+		}
 	}
 }
