@@ -45,7 +45,7 @@ public class ActorThreadPool {
 		this.actors = new ConcurrentHashMap<String,ConcurrentLinkedQueue>();
 		this.privatestate = new ConcurrentHashMap<String, PrivateState>();
 		this.availableActor = new ConcurrentHashMap<String,Boolean> ();
-        this.shutdown.set(true);
+        this.shutdown = new AtomicBoolean(true);
 		for (int i=0 ; i< this.threads.length ; i++){
 			threads[i] = new Thread(()-> ThreadMission());
 		}
@@ -70,7 +70,7 @@ public class ActorThreadPool {
 			actors.get(actorId).add(action);
 			privatestate.put(actorId,actorState);
 
-			version.inc();
+			this.version.inc();
 	}
 	/**
 	 * closes the thread pool - this method interrupts all the threads and waits
@@ -86,6 +86,8 @@ public class ActorThreadPool {
 	    this.shutdown.set(true);
         for (Thread thread:threads)
             thread.interrupt();
+        for (Thread thread:threads)
+            thread.join();
 	}
 
 	/**
@@ -114,6 +116,7 @@ public class ActorThreadPool {
             }//end of sync
             if (foundAction) {
                 ((Action<?>) this.actors.get(actorId).poll()).handle(this, actorId, this.privatestate.get(actorId));// make the Action
+                this.version.inc();
                 foundAction = false;
                 availableActor.put(actorId, true);
             }
