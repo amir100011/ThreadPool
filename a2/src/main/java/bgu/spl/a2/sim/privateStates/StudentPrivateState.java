@@ -1,6 +1,8 @@
 package bgu.spl.a2.sim.privateStates;
 
 import java.util.HashMap;
+import java.util.List;
+import java.util.Vector;
 
 import bgu.spl.a2.PrivateState;
 
@@ -19,6 +21,7 @@ public class StudentPrivateState extends PrivateState{
 	 */
 	public StudentPrivateState() {
 		this.grades = new HashMap<String, Integer>();
+		this.setHistory(new Vector<String>());
 	}
 
 	public HashMap<String, Integer> getGrades() {

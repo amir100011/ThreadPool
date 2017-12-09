@@ -25,5 +25,5 @@ public abstract class PrivateState {
 		history.add(actionName);
 	}
 	
-	
+	public void setHistory(List<String> history){this.history = history;}
 }

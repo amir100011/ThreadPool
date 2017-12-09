@@ -25,6 +25,7 @@ public class CoursePrivateState extends PrivateState{
 		registered = new Integer(0);
 		regStudents = new Vector<String>();
 		prequisites = new Vector<String>();
+		this.setHistory(new Vector<String>());
 	}
 
 	public Integer getAvailableSpots() {

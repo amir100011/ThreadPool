@@ -116,9 +116,9 @@ public class ActorThreadPool {
             }//end of sync
             if (foundAction) {
                 ((Action<?>) this.actors.get(actorId).poll()).handle(this, actorId, this.privatestate.get(actorId));// make the Action
+                availableActor.put(actorId, true);
                 this.version.inc();
                 foundAction = false;
-                availableActor.put(actorId, true);
             }
             else{//no available Action
                 try {

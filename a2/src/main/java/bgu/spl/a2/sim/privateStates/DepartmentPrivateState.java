@@ -9,6 +9,7 @@ import bgu.spl.a2.PrivateState;
  * this class describe department's private state
  */
 public class DepartmentPrivateState extends PrivateState{
+
 	private List<String> courseList;
 	private List<String> studentList;
 	
@@ -20,6 +21,7 @@ public class DepartmentPrivateState extends PrivateState{
 	public DepartmentPrivateState() {
 		courseList = new Vector<String>();
 		studentList = new Vector<String>();
+		this.setHistory(new Vector<String>());
 	}
 
 	public List<String> getCourseList() {
