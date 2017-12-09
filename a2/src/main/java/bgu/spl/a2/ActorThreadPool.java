@@ -1,7 +1,9 @@
 package bgu.spl.a2;
 
-import java.util.Queue;
+import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * represents an actor thread pool - to understand what this class does please
@@ -15,11 +17,13 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ActorThreadPool {
 
-	private ConcurrentHashMap<String,Queue<Action>> actors;
+	private ConcurrentHashMap<String,ConcurrentLinkedQueue> actors;
 	private ConcurrentHashMap<String,PrivateState> privatestate;
+    private ConcurrentHashMap<String,Boolean> availableActor;
 	private final int nthreads;
 	private Thread[] threads;
 	private VersionMonitor version;
+	private AtomicBoolean shutdown;
 
 	/**
 	 * creates a {@link ActorThreadPool} which has nthreads. Note, threads
@@ -38,13 +42,13 @@ public class ActorThreadPool {
 		this.nthreads = nthreads;
 		this.threads = new Thread[nthreads];
 		this.version = new VersionMonitor();
-		this.actors = new ConcurrentHashMap<>();
-		this.privatestate = new ConcurrentHashMap<>();
-
+		this.actors = new ConcurrentHashMap<String,ConcurrentLinkedQueue>();
+		this.privatestate = new ConcurrentHashMap<String, PrivateState>();
+		this.availableActor = new ConcurrentHashMap<String,Boolean> ();
+        this.shutdown.set(true);
 		for (int i=0 ; i< this.threads.length ; i++){
-			threads[i] = new Thread();
+			threads[i] = new Thread(()-> ThreadMission());
 		}
-
 	}
 	/**
 	 * submits an action into an actor to be executed by a thread belongs to
@@ -58,9 +62,16 @@ public class ActorThreadPool {
 	 *            actor's private state (actor's information)
 	 */
 	public void submit(Action<?> action, String actorId, PrivateState actorState) {
-		
-	}
+		if(!actors.containsKey(actorId)) { // The actor don't have a Queue
+			ConcurrentLinkedQueue<Action<?>> actorQueue = new ConcurrentLinkedQueue<Action<?>>();
+			actors.put(actorId,actorQueue);
+			availableActor.put(actorId,true);
+		}//add action to the Queue
+			actors.get(actorId).add(action);
+			privatestate.put(actorId,actorState);
 
+			version.inc();
+	}
 	/**
 	 * closes the thread pool - this method interrupts all the threads and waits
 	 * for them to stop - it is returns *only* when there are no live threads in
@@ -72,16 +83,46 @@ public class ActorThreadPool {
 	 *             if the thread that shut down the threads is interrupted
 	 */
 	public void shutdown() throws InterruptedException {
-		// TODO: replace method body with real implementation
-		throw new UnsupportedOperationException("Not Implemented Yet.");
+	    this.shutdown.set(true);
+        for (Thread thread:threads)
+            thread.interrupt();
 	}
 
 	/**
 	 * start the threads belongs to this thread pool
 	 */
 	public void start() {
-		// TODO: replace method body with real implementation
-		throw new UnsupportedOperationException("Not Implemented Yet.");
+	    this.shutdown.set(false);
+		for (Thread thread:threads)
+			thread.start();
 	}
 
+    private void ThreadMission(){
+        String actorId = "";
+        Boolean foundAction = false;
+        while(!this.shutdown.get()) {
+            //Find available Actor Queue
+            synchronized (availableActor) {
+                Iterator<String> ActorList = availableActor.keySet().iterator();// Id Iterator
+                while (ActorList.hasNext() && !foundAction) {
+                    actorId = ActorList.next();
+                    if (availableActor.get(actorId) && !(actors.get(actorId).isEmpty())) {//Found available Action
+                        availableActor.put(actorId, false);
+                        foundAction = true;
+                    }
+                }
+            }//end of sync
+            if (foundAction) {
+                ((Action<?>) this.actors.get(actorId).poll()).handle(this, actorId, this.privatestate.get(actorId));// make the Action
+                foundAction = false;
+                availableActor.put(actorId, true);
+            }
+            else{//no available Action
+                try {
+                    this.version.await(this.version.getVersion());
+                }
+                catch (InterruptedException e){}
+            }//end of else
+        }//end of while
+    }
 }
